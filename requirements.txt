@@ -13,3 +13,8 @@ pdf2image
 # (or python -m spacy download en_core_web_sm as fallback)
 # LLM
 google-generativeai==0.7.2
+python-dotenv
+fastapi
+uvicorn
+python-multipart
+requests

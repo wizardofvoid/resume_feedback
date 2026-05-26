@@ -149,7 +149,7 @@ def extract_entities_nlp(text):
     return entities
 
 def calculate_semantic_similarity(text1, text2):
-    """Calculate semantic similarity between two texts using TF-IDF and cosine similarity"""
+    """Calculate semantic similarity using fast Jaccard overlap instead of slow TF-IDF"""
     if not text1 or not text2:
         return 0.0
     
@@ -157,13 +157,13 @@ def calculate_semantic_similarity(text1, text2):
     text1_processed = preprocess_text_nlp(text1)
     text2_processed = preprocess_text_nlp(text2)
     
-    # Create TF-IDF vectors
-    vectorizer = TfidfVectorizer(max_features=1000, ngram_range=(1, 2))
-    tfidf_matrix = vectorizer.fit_transform([text1_processed, text2_processed])
-    
-    # Calculate cosine similarity
-    similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-    return similarity
+    set1 = set(text1_processed.split())
+    set2 = set(text2_processed.split())
+    if not set1 or not set2:
+        return 0.0
+        
+    # Jaccard similarity
+    return len(set1.intersection(set2)) / len(set1.union(set2))
 
 def extract_skills_from_context(sections, skills_db):
     """Extract skills with better context using NLP section detection"""
