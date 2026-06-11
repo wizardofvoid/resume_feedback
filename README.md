@@ -1,9 +1,9 @@
-# 🎯 Resume Feedback System  
+# Resume Feedback System  
 ### *ATS Score Tracker & Resume Feedback System using NLP, Explainable AI, and Weighted Skill Matching*
 
 ---
 
-### 🧠 Overview  
+### Overview  
 The **Resume Feedback System** is an intelligent, explainable hiring-assist platform that evaluates resumes against job descriptions using **Natural Language Processing (NLP)**, **Explainable AI**, and **Database Management Systems (DBMS)**.  
 It analyzes resumes for **ATS compliance**, detects missing skills, evaluates formatting, and generates **AI-powered personalized feedback** to help candidates optimize their resumes for specific roles.
 
@@ -11,7 +11,7 @@ This project bridges recruiter evaluation logic with candidate clarity, providin
 
 ---
 
-## 👥 Team Members
+## Team Members
 
 | Name | Role | Key Contributions |
 |------|------|--------------------|
@@ -22,7 +22,7 @@ This project bridges recruiter evaluation logic with candidate clarity, providin
 
 ---
 
-## 🚀 Features
+## Features
 
 - Resume parsing (skills, contact info, text extraction)
 - Job Description analysis via weighted NLP matching  
@@ -37,7 +37,7 @@ This project bridges recruiter evaluation logic with candidate clarity, providin
 
 ---
 
-## 🧩 Tech Stack
+## Tech Stack
 
 | Layer | Tools / Technologies |
 |-------|----------------------|
@@ -88,19 +88,32 @@ Streamlit Visualization ──► Score Dashboard & History
 Resume-Feedback-System/
 │
 ├── app.py                  # Main Streamlit application
-├── db.py                   # Database schema and CRUD operations
-├── matcher.py              # Scoring and weighting logic
-├── resume_parser.py        # Resume skill and contact extraction
-├── JD_parser.py            # JD keyword and skill analysis
-├── feedback.py             # AI + fallback feedback system
-│
-├── data/
-│   ├── skills_list.json    # Reference list of known skills
-│   └── app.db              # SQLite database (auto-generated)
-│
 ├── requirements.txt        # Project dependencies
-└── .streamlit/
-    └── secrets.toml        # Google Gemini API key config (gitignored)
+│
+├── backend/
+│   ├── api.py              # FastAPI backend entry point
+│   ├── data/
+│   │   ├── app.db          # SQLite database (auto-generated)
+│   │   └── skills_list.json # Reference list of known skills
+│   │
+│   ├── database/
+│   │   └── db.py           # Database schema and CRUD operations
+│   │
+│   ├── parsers/
+│   │   ├── jd_parser.py    # JD keyword and skill analysis
+│   │   └── resume_parser.py # Resume skill and contact extraction
+│   │
+│   └── scoring/
+│       ├── feedback.py     # Fallback feedback module (unused)
+│       ├── matcher.py      # Scoring and weighting logic
+│       └── synonyms.py     # Synonym mapping and canonicalization
+│
+├── tests/
+│   └── test_phone.py       # Phone extraction validation tests
+│
+└── ui/
+    ├── components.py       # Reusable Streamlit UI components
+    └── theme.py            # Streamlit custom styling and themes
 ```
 
 ---

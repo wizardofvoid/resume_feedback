@@ -12,7 +12,8 @@ api_key = os.getenv("GOOGLE_API_KEY")
 from backend.parsers.resume_parser import parse_resume
 from backend.parsers.jd_parser import extract_skills_from_JD
 from backend.scoring.matcher import calculate_weighted_skill_match, calculate_format_score, calculate_ats_score
-from backend.database.db import insert_resume, insert_jd, insert_match, fetch_recent_matches, init_db
+from backend.database.db import insert_resume, insert_jd, insert_match, fetch_recent_matches, init_db, clear_db
+from backend.scoring.synonyms import get_canonical_name
 import google.generativeai as genai
 
 # Initialize database
@@ -57,9 +58,16 @@ async def analyze_resume(file: UploadFile = File(...), job_description: str = Fo
             system_msg = "You are an expert technical recruiter analyzing a candidate's resume against a job description. Provide constructive, brief feedback."
             user_prompt = "Job Description:\n" + job_description + "\n\nResume Text:\n" + resume_data.get('text', '')
             
-            job_skills_normalized = set(job_skill_weights.keys())
-            found_skills = list(resume_skills_set & job_skills_normalized)
-            missing_skills = list(job_skills_normalized - resume_skills_set)
+            # Match using canonical names (synonyms/aliases)
+            canonical_resume_skills = {get_canonical_name(s) for s in resume_skills_set}
+            found_skills = []
+            missing_skills = []
+            for skill in job_skill_weights.keys():
+                canonical_skill = get_canonical_name(skill)
+                if canonical_skill in canonical_resume_skills:
+                    found_skills.append(skill)
+                else:
+                    missing_skills.append(skill)
         else:
             job_skill_weights = {}
             skill_match_score = resume_data.get('quality_analysis', {}).get('ats_score', format_score) 
@@ -80,11 +88,6 @@ async def analyze_resume(file: UploadFile = File(...), job_description: str = Fo
                 ai_feedback = response.text
             except Exception as e:
                 ai_feedback = f"Error generating feedback: {str(e)}"
-
-        # Find missing/matched skills
-        job_skills_normalized = set(job_skill_weights.keys())
-        found_skills = list(resume_skills_set & job_skills_normalized)
-        missing_skills = list(job_skills_normalized - resume_skills_set)
 
         # Save to DB
         contact_info = resume_data.get('contact_info', {})
@@ -125,12 +128,8 @@ async def get_history():
 
 @app.post("/clear_history")
 async def clear_history():
-    import sqlite3
-    db_path = Path(__file__).parent / 'database' / 'data' / 'ats_history.db'
-    if db_path.exists():
-        conn = sqlite3.connect(str(db_path))
-        cur = conn.cursor()
-        cur.execute("DELETE FROM matches;")
-        conn.commit()
-        conn.close()
-    return {"status": "cleared"}
+    try:
+        clear_db()
+        return {"status": "cleared"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to clear database: {str(e)}")

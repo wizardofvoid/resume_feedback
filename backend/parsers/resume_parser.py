@@ -5,14 +5,11 @@ import spacy
 import pytesseract
 import pdf2image
 from difflib import SequenceMatcher
-from collections import defaultdict
-import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.stem import WordNetLemmatizer
+from functools import lru_cache
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -54,6 +51,7 @@ lemmatizer = WordNetLemmatizer()
 # stop words are words like a, an, the,...
 stop_words = set(stopwords.words('english'))
 
+@lru_cache(maxsize=2048)
 def preprocess_text_nlp(text):
     """Advanced NLP preprocessing of text"""
     # Convert to lowercase for uniform processing of text
@@ -148,6 +146,7 @@ def extract_entities_nlp(text):
     
     return entities
 
+@lru_cache(maxsize=4096)
 def calculate_semantic_similarity(text1, text2):
     """Calculate semantic similarity using fast Jaccard overlap instead of slow TF-IDF"""
     if not text1 or not text2:
@@ -419,6 +418,7 @@ def extract_skills(text, skills_db):
     
     # Create a comprehensive text representation for semantic matching
     text_processed = preprocess_text_nlp(text)
+    words_greater_than_3 = [word for word in text_processed.split() if len(word) > 3]
     
     # Extract skills using multiple NLP approaches
     for skill in skills_db:
@@ -466,16 +466,20 @@ def extract_skills(text, skills_db):
         
         # 3. Fuzzy matching with enhanced context analysis
         if not match_found and len(skill_lower) > 3:
-            words = text_processed.split()
-            for word in words:
-                if len(word) > 3:
-                    similarity = SequenceMatcher(None, skill_lower, word).ratio()
-                    if similarity > 0.8:
-                        confidence = similarity * 0.8
-                        match_found = True
-                        context_info['match_type'] = 'fuzzy_match'
-                        context_info['matched_word'] = word
-                        break
+            len_a = len(skill_lower)
+            for word in words_greater_than_3:
+                len_b = len(word)
+                # Skip SequenceMatcher if the maximum possible ratio is less than 0.8
+                if 2.0 * min(len_a, len_b) / (len_a + len_b) < 0.8:
+                    continue
+                
+                similarity = SequenceMatcher(None, skill_lower, word).ratio()
+                if similarity > 0.8:
+                    confidence = similarity * 0.8
+                    match_found = True
+                    context_info['match_type'] = 'fuzzy_match'
+                    context_info['matched_word'] = word
+                    break
         
         # 4. Compound skill matching with dependency parsing
         if not match_found and ' ' in skill_lower:

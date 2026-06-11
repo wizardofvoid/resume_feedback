@@ -150,3 +150,17 @@ def fetch_recent_matches(limit: int = 20):
     rows = cur.fetchall()
     conn.close()
     return rows
+
+
+def clear_db():
+    """
+    Clear all matches and records from the database.
+    """
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM matches;")
+    cur.execute("DELETE FROM resumes;")
+    cur.execute("DELETE FROM job_descriptions;")
+    conn.commit()
+    conn.close()
+

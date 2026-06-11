@@ -1,4 +1,4 @@
-import numpy as np
+from backend.scoring.synonyms import get_canonical_name
 
 def calculate_weighted_skill_match(resume_skills_set: set, job_skill_weights: dict) -> float:
     """
@@ -16,15 +16,21 @@ def calculate_weighted_skill_match(resume_skills_set: set, job_skill_weights: di
     if not job_skill_weights:
         return 0.0
 
+    # Convert resume skills to canonical names
+    canonical_resume_skills = {get_canonical_name(s) for s in resume_skills_set}
+
+    # Convert job description skill weights to canonical names, keeping the maximum weight if duplicates collapse
+    canonical_job_weights = {}
+    for skill, weight in job_skill_weights.items():
+        canonical_skill = get_canonical_name(skill)
+        canonical_job_weights[canonical_skill] = max(canonical_job_weights.get(canonical_skill, 0), weight)
+
     matched_score = 0
-    total_possible_score = sum(job_skill_weights.values())
+    total_possible_score = sum(canonical_job_weights.values())
 
-    # Normalize resume skills set just in case
-    resume_skills_set = {s.lower().strip() for s in resume_skills_set}
-
-    for skill in resume_skills_set:
-        if skill in job_skill_weights:
-            matched_score += job_skill_weights[skill]
+    for skill in canonical_resume_skills:
+        if skill in canonical_job_weights:
+            matched_score += canonical_job_weights[skill]
 
     match_percentage = (matched_score / total_possible_score) * 100
     return min(match_percentage, 100.0)
