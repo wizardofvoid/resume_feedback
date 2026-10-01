@@ -122,8 +122,12 @@ def detect_resume_sections(text):
                 
                 section_content = text[start_idx:next_section_start]
                 sections[section].append(section_content)
-                break
-    
+                # NOTE: do not break here. A single tokenized "sentence" can span
+                # multiple resume headings (e.g. a Skills list flows straight into
+                # the Experience heading with no period between them). Breaking on
+                # the first match would drop every later section in that sentence —
+                # which is why the Experience section was silently going undetected.
+
     return sections
 
 def extract_entities_nlp(text):
@@ -636,10 +640,18 @@ def parse_resume(file_input, skills_db):
     if new_skills_added:
         import json
         import os
-        base_dir = os.path.dirname(__file__)
+        # skills_list.json lives in backend/data/, one level up from this
+        # parsers/ package. The previous path pointed at a non-existent
+        # backend/parsers/data/ directory, so any write would have raised
+        # FileNotFoundError. Guarded so a persistence hiccup can never break
+        # an analysis request.
+        base_dir = os.path.dirname(os.path.dirname(__file__))
         skills_path = os.path.join(base_dir, 'data', 'skills_list.json')
-        with open(skills_path, 'w', encoding='utf-8') as f:
-            json.dump(skills_db, f, indent=4)
+        try:
+            with open(skills_path, 'w', encoding='utf-8') as f:
+                json.dump(skills_db, f, indent=4)
+        except OSError as e:
+            print(f"Warning: could not persist newly discovered skills: {e}")
     
     return {
         "text": text,

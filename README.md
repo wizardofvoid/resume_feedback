@@ -1,258 +1,88 @@
-# Resume Feedback System  
-### *ATS Score Tracker & Resume Feedback System using NLP, Explainable AI, and Weighted Skill Matching*
+# Glance
 
----
+Glance analyzes a PDF or DOCX resume against a job description and turns the result into a concise ATS score, skill-gap breakdown, and actionable feedback.
 
-### Overview  
-The **Resume Feedback System** is an intelligent, explainable hiring-assist platform that evaluates resumes against job descriptions using **Natural Language Processing (NLP)**, **Explainable AI**, and **Database Management Systems (DBMS)**.  
-It analyzes resumes for **ATS compliance**, detects missing skills, evaluates formatting, and generates **AI-powered personalized feedback** to help candidates optimize their resumes for specific roles.
+The repository contains one frontend and one backend:
 
-This project bridges recruiter evaluation logic with candidate clarity, providing **transparent, data-driven, and actionable insights**.
+- `frontend/` — Next.js 16 and React 19 interface
+- `backend/` — FastAPI API, resume parsing, scoring, Gemini feedback, and local SQLite persistence
 
----
+The login screen is currently visual only. Authentication and hosted persistence will be connected later through Supabase.
 
-## Team Members
+## Local setup
 
-| Name | Role | Key Contributions |
-|------|------|--------------------|
-| **Swayam Swaroop Sahu** | Backend, Database, Explainability | Designed DB schema, backend logic, integrated explainability layer, refined UI |
-| **Ayush Saraf** | NLP & Matching Module | Built JD–Resume parser, keyword extractor, and weighted skill matcher |
-| **Ankush** | UI Design & Frontend | Developed user interface layout, component structuring, and design consistency |
-| **Akash** | Frontend Development | Implemented data visualization and front-end polish |
+Prerequisites: Node.js, npm, Python 3.11+, and a Python virtual environment.
 
----
-
-## Features
-
-- Resume parsing (skills, contact info, text extraction)
-- Job Description analysis via weighted NLP matching  
-- Skill match scoring with explainable weights  
-- ATS format evaluation for readability & structure  
-- Final ATS score combining multiple weighted metrics  
-- AI feedback (via **Google Gemini API**)  
-- Transparent skill visualization (matched/missing)  
-- SQLite database storage for persistent analysis  
-- History view for previous evaluations  
-- Professionally themed **SaaS-grade UI**  
-
----
-
-## Tech Stack
-
-| Layer | Tools / Technologies |
-|-------|----------------------|
-| **Frontend** | Streamlit |
-| **Backend / Logic** | Python |
-| **Database** | SQLite |
-| **AI / NLP** | spaCy, Google Gemini API |
-| **Data Processing** | Pandas, JSON |
-| **Explainability** | Weighted skill transparency & ATS breakdown |
-
----
-
-## **System Architecture**
-
-```
-Resume (PDF/DOCX)
-        │
-        ▼
-Resume Parser ──► Extracted Text, Skills, Contact Info
-        │
-        ▼
-Job Description Parser ──► Weighted Skill Extraction
-        │
-        ▼
-Weighted Skill Matcher ──► Match %, Missing Skills
-        │
-        ▼
-Format Scoring ──► Layout & Structure Evaluation
-        │
-        ▼
-ATS Scoring ──► Final Composite Score
-        │
-        ▼
-AI Feedback (Gemini) ──► Personalized Suggestions
-        │
-        ▼
-SQLite Storage ──► Resumes, JDs, Matches, Feedback
-        │
-        ▼
-Streamlit Visualization ──► Score Dashboard & History
-```
-
----
-
-## **Project Structure**
-
-```
-Resume-Feedback-System/
-│
-├── app.py                  # Main Streamlit application
-├── requirements.txt        # Project dependencies
-│
-├── backend/
-│   ├── api.py              # FastAPI backend entry point
-│   ├── data/
-│   │   ├── app.db          # SQLite database (auto-generated)
-│   │   └── skills_list.json # Reference list of known skills
-│   │
-│   ├── database/
-│   │   └── db.py           # Database schema and CRUD operations
-│   │
-│   ├── parsers/
-│   │   ├── jd_parser.py    # JD keyword and skill analysis
-│   │   └── resume_parser.py # Resume skill and contact extraction
-│   │
-│   └── scoring/
-│       ├── feedback.py     # Fallback feedback module (unused)
-│       ├── matcher.py      # Scoring and weighting logic
-│       └── synonyms.py     # Synonym mapping and canonicalization
-│
-├── tests/
-│   └── test_phone.py       # Phone extraction validation tests
-│
-└── ui/
-    ├── components.py       # Reusable Streamlit UI components
-    └── theme.py            # Streamlit custom styling and themes
-```
-
----
-
-## **Installation & Setup**
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/Swayam-Swaroop-Sahu/Resume-Feedback-System.git
-cd Resume-Feedback-System
-```
-
-### 2. Create a Virtual Environment (Recommended)
-
-```bash
-python -m venv venv
-venv\Scripts\activate        # For Windows
-source venv/bin/activate     # For macOS / Linux
-```
-
-### 3. Install Dependencies
-
-```bash
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 python -m spacy download en_core_web_md
+npm --prefix frontend install
+Copy-Item .env.example .env
+Copy-Item frontend/.env.example frontend/.env.local
 ```
 
-### 4. Configure API Key
+Add a Gemini API key to `.env` if you want AI-generated feedback:
 
-Copy the template and add your API key:
+```dotenv
+GOOGLE_API_KEY=your_key_here
+```
+
+The core analyzer still works without the key. OCR for scanned files additionally requires Tesseract and Poppler on the system path.
+
+## Run
+
+Start both applications with:
+
+```powershell
+./run.ps1
+```
+
+On macOS or Linux:
 
 ```bash
-cp .streamlit/secrets.toml.template .streamlit/secrets.toml
+./run.sh
 ```
 
-Then edit `.streamlit/secrets.toml`:
+Glance opens at `http://localhost:3000`; FastAPI runs at `http://localhost:8000`.
 
-```toml
-GOOGLE_API_KEY = "your_actual_api_key_here"
+To run the processes separately:
+
+```powershell
+python -m uvicorn backend.api:app --port 8000
+npm --prefix frontend run dev
 ```
 
-### 5. Run the Application
+`BACKEND_API_URL` is server-only. The frontend defaults to `http://127.0.0.1:8000` and proxies browser requests through its own `/api` routes.
 
-```bash
-streamlit run app.py
+## Project structure
+
+```text
+backend/
+  api.py                  FastAPI endpoints
+  data/skills_list.json   known skills catalogue
+  database/db.py          local SQLite schema and queries
+  parsers/                resume and job-description extraction
+  scoring/                ATS and skill matching logic
+frontend/
+  app/                    routes and API proxies
+  components/             interface components
+  lib/                    shared frontend helpers and types
+requirements.txt          Python dependencies
+run.ps1 / run.sh          local two-process launchers
 ```
 
-App will be available at:
+The local database is created at `backend/database/data/app.db`. It is runtime data and is intentionally ignored by Git.
 
-```
-http://localhost:8501
-```
+## Checks
 
----
-
-## **Usage Guide**
-
-1. Upload your **resume (PDF or DOCX)**
-2. Paste your **job description (JD)**
-3. Click **Generate ATS Score & Feedback**
-4. View:
-
-   * ATS Score Breakdown
-   * Skill Match Analysis
-   * AI-Powered Feedback
-   * Missing Skill Suggestions
-5. Access **Recent Score History** to review past evaluations
-
----
-
-## **Database & Persistence**
-
-All user evaluations are stored locally in:
-
-```
-./data/app.db
+```powershell
+npm --prefix frontend run lint
+npm --prefix frontend run build
+python -m compileall backend
 ```
 
-**Database Tables**
+## License
 
-| Table              | Description                                  |
-| ------------------ | -------------------------------------------- |
-| `resumes`          | Stores resume text, skills, and contact info |
-| `job_descriptions` | Stores JD text and extracted skills          |
-| `matches`          | Stores scores, feedback, and timestamps      |
-
-**Clear Previous History**
-
-```bash
-cd data
-del app.db       # (Windows)
-rm app.db        # (macOS / Linux)
-```
-
-The database will auto-recreate on next run.
-
----
-
-## **Security Notes**
-
-* `.streamlit/secrets.toml` is excluded from Git tracking.
-* Never share or commit API keys.
-* All AI calls and resume processing happen locally.
-
----
-
-## **Future Enhancements**
-
-* Resume formatting analysis
-* Graphical skill-gap visualization
-* Resume–JD similarity charts
-* PDF report export
-* User login and tracking
-* Cloud deployment (AWS / GCP)
-
----
-
-## **License**
-
-This project is released under the **MIT License**.
-You are free to use, modify, and distribute it with proper attribution.
-
----
-
-## **Academic Context & Acknowledgements**
-
-This project integrates:
-
-| Area                     | Focus                                         |
-| ------------------------ | --------------------------------------------- |
-| **DBMS Concepts**        | Structured storage & relational schema design |
-| **AI & NLP**             | Resume and JD parsing, skill extraction       |
-| **Explainability**       | Transparent ATS scoring & skill reasoning     |
-| **Software Engineering** | Modular design and UI/UX implementation       |
-
-Developed collaboratively by:
-**Swayam Swaroop Sahu**, **Ayush Saraf**, **Ankush**, and **Akash**
-at **VIT Vellore (2025)**
-
----
-
+[MIT](LICENSE)
