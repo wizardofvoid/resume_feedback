@@ -1,12 +1,18 @@
 "use client";
 
 import { FormEvent, useRef, useState } from "react";
-import { ArrowIcon, CheckIcon } from "./icons";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { ArrowIcon } from "./icons";
 
 type FieldErrors = {
   email: string;
   password: string;
 };
+
+type AuthMode = "login" | "signup";
+type PendingAction = "email" | "google" | "recovery" | null;
+type Notice = { tone: "error" | "success"; message: string } | null;
 
 const EMPTY_ERRORS: FieldErrors = { email: "", password: "" };
 
@@ -22,24 +28,39 @@ function passwordError(value: string) {
   return "";
 }
 
-export function LoginForm() {
+export function LoginForm({ initialMessage = "" }: { initialMessage?: string }) {
+  const router = useRouter();
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(true);
   const [errors, setErrors] = useState<FieldErrors>(EMPTY_ERRORS);
-  const [notice, setNotice] = useState("");
+  const [pending, setPending] = useState<PendingAction>(null);
+  const [notice, setNotice] = useState<Notice>(
+    initialMessage ? { tone: "error", message: initialMessage } : null,
+  );
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  function getClient() {
+    const supabase = createClient();
+    if (!supabase) {
+      setNotice({
+        tone: "error",
+        message: "Supabase is not configured yet. Add the project URL and publishable key to frontend/.env.local.",
+      });
+    }
+    return supabase;
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextErrors = {
       email: emailError(email),
       password: passwordError(password),
     };
     setErrors(nextErrors);
-    setNotice("");
+    setNotice(null);
 
     if (nextErrors.email) {
       emailRef.current?.focus();
@@ -50,24 +71,123 @@ export function LoginForm() {
       return;
     }
 
-    setNotice("The login interface is ready. Supabase authentication will be connected next.");
+    const supabase = getClient();
+    if (!supabase) return;
+
+    setPending("email");
+
+    if (mode === "login") {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setNotice({ tone: "error", message: error.message });
+        setPending(null);
+        return;
+      }
+
+      router.replace("/");
+      router.refresh();
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/`,
+      },
+    });
+
+    if (error) {
+      setNotice({ tone: "error", message: error.message });
+      setPending(null);
+      return;
+    }
+
+    if (data.session) {
+      router.replace("/");
+      router.refresh();
+      return;
+    }
+
+    setNotice({
+      tone: "success",
+      message: "Check your inbox to confirm your account, then return here to log in.",
+    });
+    setPending(null);
   }
+
+  async function continueWithGoogle() {
+    const supabase = getClient();
+    if (!supabase) return;
+
+    setPending("google");
+    setNotice(null);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=/`,
+      },
+    });
+
+    if (error) {
+      setNotice({ tone: "error", message: error.message });
+      setPending(null);
+    }
+  }
+
+  async function recoverPassword() {
+    const nextEmailError = emailError(email);
+    setErrors((current) => ({ ...current, email: nextEmailError }));
+    if (nextEmailError) {
+      emailRef.current?.focus();
+      return;
+    }
+
+    const supabase = getClient();
+    if (!supabase) return;
+
+    setPending("recovery");
+    setNotice(null);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+    });
+
+    setPending(null);
+    setNotice(
+      error
+        ? { tone: "error", message: error.message }
+        : { tone: "success", message: "Password reset link sent. Check your inbox." },
+    );
+  }
+
+  function switchMode() {
+    setMode((current) => (current === "login" ? "signup" : "login"));
+    setErrors(EMPTY_ERRORS);
+    setNotice(null);
+  }
+
+  const isLogin = mode === "login";
 
   return (
     <div className="login-card">
       <div className="login-card-heading">
-        <p className="eyebrow"><span /> Account access</p>
-        <h1 id="login-title">Welcome back.</h1>
-        <p>Log in to keep your scans, revisit feedback, and track what improved.</p>
+        <p className="eyebrow"><span /> {isLogin ? "Account access" : "Create your account"}</p>
+        <h1 id="login-title">{isLogin ? "Welcome back." : "Start keeping score."}</h1>
+        <p>
+          {isLogin
+            ? "Log in to keep your scans, revisit feedback, and track what improved."
+            : "Create an account to keep each scan tied to your progress."}
+        </p>
       </div>
 
       <button
         className="oauth-button"
         type="button"
-        onClick={() => setNotice("Google sign-in will be connected through Supabase.")}
+        disabled={pending !== null}
+        onClick={continueWithGoogle}
       >
         <span className="google-mark" aria-hidden="true">G</span>
-        Continue with Google
+        {pending === "google" ? "Opening Google…" : "Continue with Google"}
       </button>
 
       <div className="auth-divider"><span>or use email</span></div>
@@ -112,7 +232,7 @@ export function LoginForm() {
             name="password"
             type={showPassword ? "text" : "password"}
             value={password}
-            autoComplete="current-password"
+            autoComplete={isLogin ? "current-password" : "new-password"}
             placeholder="At least 8 characters"
             aria-invalid={Boolean(errors.password)}
             aria-describedby={errors.password ? "login-password-error" : undefined}
@@ -126,32 +246,34 @@ export function LoginForm() {
         </div>
 
         <div className="login-options">
-          <label className="remember-check">
-            <input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} />
-            <span className="check-box"><CheckIcon /></span>
-            <span>Keep me signed in</span>
-          </label>
-          <button
-            className="password-recovery"
-            type="button"
-            onClick={() => setNotice("Password recovery will be connected through Supabase.")}
-          >
-            Forgot password?
-          </button>
+          <span className="session-note">Secure, cookie-backed session</span>
+          {isLogin && (
+            <button
+              className="password-recovery"
+              type="button"
+              disabled={pending !== null}
+              onClick={recoverPassword}
+            >
+              {pending === "recovery" ? "Sending…" : "Forgot password?"}
+            </button>
+          )}
         </div>
 
-        <button className="primary-button login-submit" type="submit">
-          <span>Log in</span>
+        <button className="primary-button login-submit" type="submit" disabled={pending !== null}>
+          <span>{pending === "email" ? "Working…" : isLogin ? "Log in" : "Create account"}</span>
           <ArrowIcon />
         </button>
       </form>
 
-      <div className="auth-notice" aria-live="polite">
-        {notice && <p>{notice}</p>}
+      <div className={`auth-notice${notice ? ` is-${notice.tone}` : ""}`} aria-live="polite">
+        {notice && <p>{notice.message}</p>}
       </div>
 
       <p className="signup-note">
-        New to Glance? <button type="button" onClick={() => setNotice("Account creation will be added with Supabase authentication.")}>Create an account</button>
+        {isLogin ? "New to Glance?" : "Already have an account?"}{" "}
+        <button type="button" onClick={switchMode} disabled={pending !== null}>
+          {isLogin ? "Create an account" : "Log in"}
+        </button>
       </p>
     </div>
   );

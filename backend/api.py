@@ -12,12 +12,8 @@ api_key = os.getenv("GOOGLE_API_KEY")
 from backend.parsers.resume_parser import parse_resume
 from backend.parsers.jd_parser import extract_skills_from_JD
 from backend.scoring.matcher import calculate_weighted_skill_match, calculate_format_score, calculate_ats_score
-from backend.database.db import insert_resume, insert_jd, insert_match, fetch_recent_matches, init_db, clear_db
 from backend.scoring.synonyms import get_canonical_name
 import google.generativeai as genai
-
-# Initialize database
-init_db()
 
 if api_key:
     genai.configure(api_key=api_key)
@@ -89,12 +85,7 @@ async def analyze_resume(file: UploadFile = File(...), job_description: str = Fo
             except Exception as e:
                 ai_feedback = f"Error generating feedback: {str(e)}"
 
-        # Save to DB
         contact_info = resume_data.get('contact_info', {})
-        rid = insert_resume(resume_data.get('text', ''), found_skills, contact_info.get('email', ''), contact_info.get('phone', ''))
-        jdid = insert_jd(job_description, job_skill_weights)
-        insert_match(rid, jdid, skill_match_score, format_score, ats_score, missing_skills, ai_feedback)
-
         return {
             "ats_score": ats_score,
             "skill_match_score": skill_match_score,
@@ -103,33 +94,12 @@ async def analyze_resume(file: UploadFile = File(...), job_description: str = Fo
             "missing_skills": missing_skills,
             "job_skill_weights": job_skill_weights,
             "ai_feedback": ai_feedback,
-            "quality_analysis": resume_data.get('quality_analysis', {})
+            "quality_analysis": resume_data.get('quality_analysis', {}),
+            "contact_info": {
+                "email": contact_info.get('email', ''),
+                "phone": contact_info.get('phone', '')
+            }
         }
 
     finally:
         os.unlink(tmp_path)
-
-@app.get("/history")
-async def get_history():
-    history = fetch_recent_matches()
-    # match_id, created_at, final_ats_score, resume_id, contact_email, contact_phone, jd_id
-    formatted = []
-    for row in history:
-        formatted.append({
-            "id": row[0],
-            "created_at": row[1],
-            "score": row[2],
-            "resume_id": row[3],
-            "email": row[4],
-            "phone": row[5],
-            "jd_id": row[6]
-        })
-    return {"history": formatted}
-
-@app.post("/clear_history")
-async def clear_history():
-    try:
-        clear_db()
-        return {"status": "cleared"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to clear database: {str(e)}")

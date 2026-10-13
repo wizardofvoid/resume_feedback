@@ -156,6 +156,17 @@ mark { color: inherit; }
   gap: 10px;
 }
 
+.header-meta form { margin: 0; }
+
+.account-chip {
+  max-width: 180px;
+  overflow: hidden;
+  color: var(--muted);
+  font: 400 10px var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .icon-button {
   width: 42px;
   height: 42px;
@@ -202,6 +213,12 @@ mark { color: inherit; }
 }
 
 .login-link:hover { background: var(--paper); color: var(--ink); }
+
+button.login-link {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
 
 .hero {
   min-height: 690px;
@@ -1101,6 +1118,7 @@ mark { color: inherit; }
 }
 
 .oauth-button:hover { border-color: var(--ink); background: var(--paper-raised); }
+.oauth-button:disabled { cursor: wait; opacity: 0.6; }
 
 .google-mark {
   width: 24px;
@@ -1190,6 +1208,11 @@ mark { color: inherit; }
   gap: 16px;
 }
 
+.session-note {
+  color: var(--faint);
+  font: 400 10px var(--font-mono);
+}
+
 .remember-check {
   display: flex;
   align-items: center;
@@ -1227,6 +1250,11 @@ mark { color: inherit; }
   font: 400 11px/1.55 var(--font-mono);
 }
 
+.auth-notice.is-error p {
+  border-color: var(--pink);
+  background: color-mix(in srgb, var(--pink) 10%, transparent);
+}
+
 .signup-note {
   margin: 8px 0 0;
   padding-top: 20px;
@@ -1248,6 +1276,40 @@ mark { color: inherit; }
 }
 
 .auth-footer p { margin: 0; color: var(--muted); font: 400 11px var(--font-mono); }
+
+.auth-page-single {
+  grid-template-columns: minmax(380px, 460px);
+  justify-content: center;
+}
+
+.reset-form { margin-top: 28px; }
+
+.auth-gate {
+  min-height: 430px;
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  justify-content: center;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.auth-gate h2 {
+  max-width: 700px;
+  margin: 0;
+  font-family: var(--font-editorial);
+  font-size: clamp(46px, 6vw, 70px);
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+.auth-gate > p:not(.eyebrow) {
+  max-width: 600px;
+  margin: 22px 0 30px;
+  color: var(--muted);
+  line-height: 1.7;
+}
 
 /* Keep the technical voice readable on phones and at text zoom. */
 .eyebrow,
@@ -1308,6 +1370,7 @@ mark { color: inherit; }
   .shell { width: min(100% - 28px, 1120px); }
   .site-header { min-height: 68px; }
   .header-cta { display: none; }
+  .account-chip { display: none; }
   .login-link { padding-inline: 8px; }
   .hero { min-height: auto; gap: 52px; padding-block: 58px 64px; }
   .hero h1 { font-size: clamp(52px, 16vw, 78px); }

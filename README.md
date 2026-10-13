@@ -4,10 +4,10 @@ Glance analyzes a PDF or DOCX resume against a job description and turns the res
 
 The repository contains one frontend and one backend:
 
-- `frontend/` — Next.js 16 and React 19 interface
-- `backend/` — FastAPI API, resume parsing, scoring, Gemini feedback, and local SQLite persistence
+- `frontend/` — Next.js 16, React 19, and Supabase Auth interface
+- `backend/` — stateless FastAPI service for resume parsing, scoring, and Gemini feedback
 
-The login screen is currently visual only. Authentication and hosted persistence will be connected later through Supabase.
+Supabase provides authentication and per-user PostgreSQL analysis history. Authentication supports email/password, account confirmation, password recovery, Google OAuth, and cookie-backed sessions.
 
 ## Local setup
 
@@ -30,6 +30,32 @@ GOOGLE_API_KEY=your_key_here
 ```
 
 The core analyzer still works without the key. OCR for scanned files additionally requires Tesseract and Poppler on the system path.
+
+## Supabase authentication
+
+Create a free Supabase project, then copy its Project URL and publishable key from the project **Connect** dialog into `frontend/.env.local`:
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+```
+
+In Supabase Authentication URL settings, set the local Site URL to `http://localhost:3000` and allow `http://localhost:3000/**` as a redirect URL. Email/password auth is enabled by default.
+
+For server-rendered email confirmation, set the Confirm signup email template link to:
+
+```text
+{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email
+```
+
+Google login additionally requires enabling the Google provider in Supabase and adding the callback URL shown on that provider page to the Google Cloud OAuth client.
+
+## Supabase database
+
+Open the Supabase SQL Editor, create a new query, paste the contents of
+`supabase/migrations/202610060001_create_resume_analyses.sql`, and run it once.
+
+The migration creates the `resume_analyses` table, enables row-level security, and grants authenticated users access only to rows that belong to their own account. Resume files and full extracted resume text are not stored; Glance keeps the filename, extracted contact details, scores, skill results, and feedback needed for history.
 
 ## Run
 
@@ -56,24 +82,25 @@ npm --prefix frontend run dev
 
 `BACKEND_API_URL` is server-only. The frontend defaults to `http://127.0.0.1:8000` and proxies browser requests through its own `/api` routes.
 
+The Next.js analyze and history routes require a verified Supabase session. Next.js writes history with that user's session, so Supabase row-level security remains the authorization boundary. FastAPI is stateless and only returns the analysis result.
+
 ## Project structure
 
 ```text
 backend/
   api.py                  FastAPI endpoints
   data/skills_list.json   known skills catalogue
-  database/db.py          local SQLite schema and queries
   parsers/                resume and job-description extraction
   scoring/                ATS and skill matching logic
 frontend/
   app/                    routes and API proxies
   components/             interface components
   lib/                    shared frontend helpers and types
+supabase/
+  migrations/             versioned PostgreSQL schema and RLS policies
 requirements.txt          Python dependencies
 run.ps1 / run.sh          local two-process launchers
 ```
-
-The local database is created at `backend/database/data/app.db`. It is runtime data and is intentionally ignored by Git.
 
 ## Checks
 

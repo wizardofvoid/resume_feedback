@@ -1,14 +1,23 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { BrandWordmark } from "@/components/brand-wordmark";
 import { LoginForm } from "@/components/login-form";
 import { SiteHeader } from "@/components/site-header";
+import { getCurrentUser } from "@/lib/supabase/auth";
 
 export const metadata: Metadata = {
   title: "Log in — Glance",
   description: "Log in to revisit your resume analyses and feedback.",
 };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ message?: string }>;
+}) {
+  const [user, params] = await Promise.all([getCurrentUser(), searchParams]);
+  if (user) redirect("/");
+
   return (
     <main className="auth-shell">
       <a className="skip-link" href="#auth-content">Skip to login</a>
@@ -23,16 +32,16 @@ export default function LoginPage() {
           </p>
           <div className="auth-story-note">
             <span>Built for continuity</span>
-            <p>Your authentication and saved account data will live in Supabase once the backend connection is added.</p>
+            <p>Supabase keeps your session secure across devices. Your saved scan history will be connected next.</p>
           </div>
         </aside>
 
-        <LoginForm />
+        <LoginForm initialMessage={params.message} />
       </section>
 
       <footer className="auth-footer shell">
         <BrandWordmark />
-        <p>Your credentials are not transmitted in this frontend-only version.</p>
+        <p>Authentication is handled by Supabase. Glance never stores your password.</p>
       </footer>
     </main>
   );

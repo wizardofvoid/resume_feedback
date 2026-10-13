@@ -1,8 +1,12 @@
+import Link from "next/link";
 import { Analyzer } from "@/components/analyzer";
 import { BrandWordmark } from "@/components/brand-wordmark";
 import { SiteHeader } from "@/components/site-header";
+import { getCurrentUser } from "@/lib/supabase/auth";
 
-export default function Home() {
+export default async function Home() {
+  const user = await getCurrentUser();
+
   return (
     <main>
       <a className="skip-link" href="#main-content">Skip to content</a>
@@ -58,7 +62,16 @@ export default function Home() {
         <div><span>03</span><p><strong>Fix what matters</strong>Start with the gaps that make the biggest difference.</p></div>
       </section>
 
-      <Analyzer />
+      {user ? (
+        <Analyzer />
+      ) : (
+        <section className="auth-gate shell" id="analyze" aria-labelledby="auth-gate-title">
+          <p className="eyebrow"><span /> Your scan, kept private</p>
+          <h2 id="auth-gate-title">Log in before you upload.</h2>
+          <p>Create a free account so each result belongs to you and your scan history stays separate.</p>
+          <Link className="primary-link" href="/login">Continue to Glance</Link>
+        </section>
+      )}
 
       <footer className="site-footer shell">
         <BrandWordmark />

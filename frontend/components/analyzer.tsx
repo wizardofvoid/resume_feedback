@@ -120,6 +120,7 @@ export function Analyzer() {
 
       const analysis = payload as AnalysisResult;
       setResult(analysis);
+      if (analysis.persistence_warning) setError(analysis.persistence_warning);
       window.sessionStorage.setItem("glance-result", JSON.stringify(analysis));
       await loadHistory();
       window.setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
@@ -131,7 +132,7 @@ export function Analyzer() {
   }
 
   async function clearHistory() {
-    if (!window.confirm("Clear every saved analysis from this local backend? This cannot be undone.")) return;
+    if (!window.confirm("Clear every analysis saved to your account? This cannot be undone.")) return;
     setClearing(true);
     try {
       const response = await fetch("/api/history", { method: "DELETE" });
@@ -236,7 +237,7 @@ export function Analyzer() {
               <span className="check-box"><CheckIcon /></span>
               <span>
                 <strong>I’m okay with external AI processing</strong>
-                <small>Your resume and role brief are sent through the configured AI service to write feedback. Completed results are kept in this backend’s local history.</small>
+                <small>Your resume and role brief are sent through the configured AI service to write feedback. Completed results are saved privately to your account.</small>
               </span>
             </label>
           </div>
@@ -244,7 +245,7 @@ export function Analyzer() {
           <div className="submit-row">
             <div className="privacy-note">
               <ShieldIcon />
-              <p>Clear the local history whenever you want.</p>
+              <p>Clear your account history whenever you want.</p>
             </div>
             <button className="primary-button" type="submit" disabled={analyzing}>
               <span>{analyzing ? "Reading your resume…" : "Scan resume"}</span>
@@ -258,7 +259,7 @@ export function Analyzer() {
         <div className="trust-strip" aria-label="How to read your result">
           <div><EyeIcon /><span><strong>Specific</strong> See the evidence behind the score.</span></div>
           <div><CheckIcon /><span><strong>Actionable</strong> Fix the biggest gaps first.</span></div>
-          <div><ShieldIcon /><span><strong>In your control</strong> Delete local history any time.</span></div>
+          <div><ShieldIcon /><span><strong>In your control</strong> Delete your saved history any time.</span></div>
         </div>
       </section>
 

@@ -6,6 +6,11 @@ export type AnalysisResult = {
   missing_skills: string[];
   job_skill_weights: Record<string, number>;
   ai_feedback: string;
+  contact_info?: {
+    email?: string;
+    phone?: string;
+  };
+  persistence_warning?: string;
   quality_analysis?: {
     recommendations?: string[];
     text_metrics?: Record<string, number>;
@@ -14,13 +19,12 @@ export type AnalysisResult = {
 };
 
 export type HistoryItem = {
-  id: number;
+  id: string;
   created_at: string;
   score: number;
-  resume_id: number;
+  resume_name: string;
   email: string | null;
   phone: string | null;
-  jd_id: number;
 };
 
 export type HistoryResponse = {

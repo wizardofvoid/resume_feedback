@@ -25,13 +25,6 @@ npm-debug.log*
 !.env.example
 /.claude/
 
-# Runtime data
-/backend/data/*.db
-/backend/database/data/*.db
-/backend/database/data/*.db-journal
-/backend/database/data/*.db-shm
-/backend/database/data/*.db-wal
-
 # Editors and operating systems
 .idea/
 .vscode/
