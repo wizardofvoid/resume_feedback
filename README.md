@@ -106,9 +106,17 @@ run.ps1 / run.sh          local two-process launchers
 
 ```powershell
 npm --prefix frontend run lint
+npm --prefix frontend run typecheck
 npm --prefix frontend run build
+npm --prefix frontend audit --omit=dev --audit-level=high
 python -m compileall backend
 ```
+
+## Continuous integration
+
+GitHub Actions runs `.github/workflows/ci.yml` for every pull request into `main`, every push to `main`, and manual runs from the Actions tab. Its independent frontend and backend jobs install dependencies in clean Linux environments and run the checks listed above. The backend job also runs `pip check` to detect incompatible Python packages.
+
+Automatic deployment is intentionally not configured yet. Once the Render backend and Vercel frontend exist, they can deploy the `main` branch only after these CI checks pass.
 
 ## License
 

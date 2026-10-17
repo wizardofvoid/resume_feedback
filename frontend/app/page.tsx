@@ -69,7 +69,7 @@ export default async function Home() {
           <p className="eyebrow"><span /> Your scan, kept private</p>
           <h2 id="auth-gate-title">Log in before you upload.</h2>
           <p>Create a free account so each result belongs to you and your scan history stays separate.</p>
-          <Link className="primary-link" href="/login">Continue to Glance</Link>
+          <Link className="primary-link" href="/login?mode=signup">Create free account</Link>
         </section>
       )}
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, DragEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { formatSkill } from "@/lib/format";
 import type { AnalysisResult, HistoryItem, HistoryResponse } from "@/lib/types";
 import { ArrowIcon, CheckIcon, CloseIcon, EyeIcon, FileIcon, ShieldIcon, UploadIcon } from "./icons";
@@ -326,7 +327,13 @@ export function Analyzer() {
             <article className="feedback-panel">
               <div className="feedback-label"><span>Recruiter’s note</span><i /></div>
               <div className="feedback-copy">
-                {result.ai_feedback.split(/\n+/).filter(Boolean).map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+                <ReactMarkdown
+                  allowedElements={["p", "strong", "em", "ul", "ol", "li", "h3", "h4", "blockquote", "code", "br"]}
+                  skipHtml
+                  unwrapDisallowed
+                >
+                  {result.ai_feedback}
+                </ReactMarkdown>
               </div>
             </article>
           )}
