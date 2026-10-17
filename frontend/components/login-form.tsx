@@ -28,11 +28,17 @@ function passwordError(value: string) {
   return "";
 }
 
-export function LoginForm({ initialMessage = "" }: { initialMessage?: string }) {
+export function LoginForm({
+  initialMessage = "",
+  initialMode = "login",
+}: {
+  initialMessage?: string;
+  initialMode?: AuthMode;
+}) {
   const router = useRouter();
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
-  const [mode, setMode] = useState<AuthMode>("login");
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -103,6 +109,9 @@ export function LoginForm({ initialMessage = "" }: { initialMessage?: string }) 
       return;
     }
 
+    setPassword("");
+    setShowPassword(false);
+
     if (data.session) {
       router.replace("/");
       router.refresh();
@@ -162,6 +171,8 @@ export function LoginForm({ initialMessage = "" }: { initialMessage?: string }) 
 
   function switchMode() {
     setMode((current) => (current === "login" ? "signup" : "login"));
+    setPassword("");
+    setShowPassword(false);
     setErrors(EMPTY_ERRORS);
     setNotice(null);
   }

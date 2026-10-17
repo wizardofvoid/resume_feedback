@@ -27,7 +27,7 @@ export async function SiteHeader() {
         ) : (
           <Link className="login-link" href="/login">Log in</Link>
         )}
-        <Link className="header-cta" href={user ? "/#analyze" : "/login"}>
+        <Link className="header-cta" href={user ? "/#analyze" : "/login?mode=signup"}>
           {user ? "Scan resume" : "Start free"}
         </Link>
       </div>

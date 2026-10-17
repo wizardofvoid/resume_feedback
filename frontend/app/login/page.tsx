@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ message?: string }>;
+  searchParams: Promise<{ message?: string; mode?: string }>;
 }) {
   const [user, params] = await Promise.all([getCurrentUser(), searchParams]);
   if (user) redirect("/");
@@ -32,11 +32,14 @@ export default async function LoginPage({
           </p>
           <div className="auth-story-note">
             <span>Built for continuity</span>
-            <p>Supabase keeps your session secure across devices. Your saved scan history will be connected next.</p>
+            <p>Supabase protects each signed-in session, while your saved scan history stays private to your account.</p>
           </div>
         </aside>
 
-        <LoginForm initialMessage={params.message} />
+        <LoginForm
+          initialMessage={params.message}
+          initialMode={params.mode === "signup" ? "signup" : "login"}
+        />
       </section>
 
       <footer className="auth-footer shell">
